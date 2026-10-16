@@ -69,3 +69,7 @@ button:disabled { cursor: wait; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 .post-card-title { text-transform: uppercase; }
+.post-card-title,
+.post-card-title button {
+  text-transform: uppercase !important;
+}
