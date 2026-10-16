@@ -1,4 +1,6 @@
 import React, { useMemo, useRef } from 'react';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 import { Post } from '../types';
 import { getPosturaStyle } from '../constants';
 import { X, MapPin, User, Calendar, Clock, Pencil, BookOpen } from 'lucide-react';
@@ -11,6 +13,8 @@ interface ViewModalProps {
   onClose: () => void;
   onEdit?: (post: Post) => void;
 }
+
+const readingModules = { toolbar: false };
 
 export default function ViewModal({ post, isOpen, onClose, onEdit }: ViewModalProps) {
   const panel = useRef<HTMLDivElement>(null);
@@ -43,7 +47,15 @@ export default function ViewModal({ post, isOpen, onClose, onEdit }: ViewModalPr
               <span><Calendar size={16} /> {new Date(post.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
               {post.address && <span className="reading-address"><MapPin size={16} /> {post.address}</span>}
             </div>
-            <article className="reading-content" lang="pt-BR" dangerouslySetInnerHTML={{ __html: content }} />
+            <article lang="pt-BR" aria-label="Conteúdo do registro">
+              <ReactQuill
+                className="record-rich-text reading-editor"
+                theme="snow"
+                value={content}
+                modules={readingModules}
+                readOnly
+              />
+            </article>
           </div>
           <footer className="reading-footer">Fiscais SP · Conhecimento compartilhado, atuação fortalecida.</footer>
         </div>

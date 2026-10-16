@@ -30,32 +30,26 @@ button:disabled { cursor: wait; }
 .reading-metadata span { display: flex; align-items: flex-start; gap: 8px; min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
 .reading-metadata svg { flex-shrink: 0; margin-top: 2px; }
 .reading-address { flex-basis: 100%; }
-.reading-content { font-size: 17px; line-height: 1.85; color: #334155; overflow-wrap: anywhere; word-break: normal; hyphens: none; }
-.reading-content * { max-width: 100%; }
-.reading-content p, .reading-content ul, .reading-content ol, .reading-content blockquote, .reading-content pre { margin: 0 0 1em; }
-.reading-content p { min-height: 1em; white-space: pre-wrap; }
-.reading-content h1, .reading-content h2, .reading-content h3, .reading-content h4 { font-weight: 750; line-height: 1.4; margin: 1.4em 0 .6em; color: #17243b; }
-.reading-content h1 { font-size: 1.75em; } .reading-content h2 { font-size: 1.45em; } .reading-content h3 { font-size: 1.2em; }
-.reading-content ul { list-style: disc; padding-left: 1.6em; }
-.reading-content ol { list-style: decimal; padding-left: 1.6em; }
-.reading-content li { margin-bottom: .4em; padding-left: .25em; }
-.reading-content li[data-list="bullet"] { list-style-type: disc; }
-.reading-content li[data-list="ordered"] { list-style-type: decimal; }
-.reading-content .ql-ui { display: none; }
-.reading-content strong, .reading-content b { font-weight: 750; }
-.reading-content a { color: #4f46e5; text-decoration: underline; text-underline-offset: 3px; }
-.reading-content blockquote { padding: 12px 20px; border-left: 3px solid #818cf8; background: #f8faff; }
-.reading-content pre { white-space: pre-wrap; padding: 18px; background: #f1f5f9; border-radius: 12px; }
-.reading-content code { font-family: monospace; font-size: .9em; }
-.reading-content img, .reading-content video { height: auto; border-radius: 12px; }
-.reading-content table { display: block; overflow-x: auto; border-collapse: collapse; }
-.reading-content td, .reading-content th { border: 1px solid #e2e8f0; padding: 10px; min-width: 100px; }
-.reading-content .ql-align-center { text-align: center; } .reading-content .ql-align-right { text-align: right; } .reading-content .ql-align-justify { text-align: justify; }
-.reading-content .ql-direction-rtl { direction: rtl; }
-.reading-content .ql-size-small { font-size: .8em; } .reading-content .ql-size-large { font-size: 1.3em; } .reading-content .ql-size-huge { font-size: 1.7em; }
-.reading-content .ql-font-serif { font-family: Georgia, serif; } .reading-content .ql-font-monospace { font-family: monospace; }
-.reading-content [class*="ql-indent-"] { padding-left: min(calc(var(--indent) * 1.5em), 30%); }
-.ql-indent-1 { --indent: 1; } .ql-indent-2 { --indent: 2; } .ql-indent-3 { --indent: 3; } .ql-indent-4 { --indent: 4; } .ql-indent-5 { --indent: 5; } .ql-indent-6 { --indent: 6; } .ql-indent-7 { --indent: 7; } .ql-indent-8 { --indent: 8; }
+/* Use the same Quill layout for editing and reading. Raw semantic HTML
+   may contain whitespace between inline elements that is not a user line break. */
+.record-rich-text .ql-editor {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.8;
+  color: #334155;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: none;
+  white-space: pre-wrap;
+}
+.record-rich-text .ql-editor p { margin: 0; }
+.record-rich-text .ql-editor img { max-width: 100%; height: auto; }
+.record-rich-text .ql-editor a { color: #4f46e5; text-decoration: underline; }
+.reading-editor .ql-container.ql-snow { border: 0; font: inherit; }
+.reading-editor .ql-editor { padding: 0 !important; height: auto; overflow-y: visible; }
+.reading-editor .ql-editor > * { cursor: auto; }
+.reading-editor .ql-editor.ql-blank::before { display: none; }
 .reading-footer { padding: 20px 24px; text-align: center; font-size: 12px; color: #64748b; background: #f8fafc; border-top: 1px solid #eef2f6; }
 .custom-scrollbar { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
 #post-form .quill { display: flex; flex-direction: column; min-height: 300px; }
@@ -68,7 +62,6 @@ button:disabled { cursor: wait; }
   .reading-panel { height: calc(100dvh - 16px); max-height: calc(100dvh - 16px); border-radius: 18px; }
   .reading-toolbar { padding: 12px; } .reading-mode { font-size: 12px; gap: 6px; }
   .reading-document { padding: 28px 20px 36px; }
-  .reading-content { font-size: 16px; line-height: 1.8; }
   .reading-time { margin-left: 0; }
   #post-form { padding: 20px; }
   .app-shell header h1 { flex-wrap: wrap; font-size: 20px; }

@@ -233,7 +233,7 @@ const CreateModal: React.FC<CreateModalProps> = ({
                 onChange={setContent} 
                 modules={quillModules}
                 placeholder="Descreva aqui todas as observações pertinentes..."
-                className="flex-1 font-medium text-slate-700"
+                className="record-rich-text flex-1 font-medium text-slate-700"
               />
             </div>
           </div>
