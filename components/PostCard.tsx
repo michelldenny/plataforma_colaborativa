@@ -1,4 +1,5 @@
 import React from 'react';
+import { extractText } from './richText';
 import { Post } from '../types';
 import { CONTENT_TYPES, POSTURA_COLORS, getPosturaStyle } from '../constants';
 import { Trash2, Pencil, Calendar, User, Lightbulb, BookOpen, FileText, AlertTriangle, Link, Scale, Bookmark } from 'lucide-react';
@@ -31,7 +32,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onDelete, onEdit, onView }) =
   return (
     <div 
       onClick={() => onView(post)}
-      className="group relative bg-white rounded-3xl p-5 aspect-square flex flex-col justify-between shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 transition-all hover:shadow-[0_12px_40px_-8px_rgba(0,0,0,0.12)] hover:-translate-y-1 cursor-pointer overflow-hidden"
+      className="group post-card relative bg-white rounded-3xl p-6 min-h-[250px] flex flex-col justify-between shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 transition-all hover:shadow-[0_12px_40px_-8px_rgba(0,0,0,0.12)] hover:-translate-y-1 cursor-pointer overflow-hidden"
     >
       {/* Topo do Card: Badge do Tema e Ícone do Tipo */}
       <div className="flex items-center justify-between gap-2 shrink-0">
@@ -45,11 +46,12 @@ const PostCard: React.FC<PostCardProps> = ({ post, onDelete, onEdit, onView }) =
 
       {/* Meio: Título principal */}
       <div className="my-auto py-2 flex-1 flex flex-col justify-center">
-        <h3 className="font-bold text-slate-800 text-[13px] md:text-[14px] leading-snug uppercase tracking-tight line-clamp-3 group-hover:text-indigo-600 transition-colors">
-          {post.title}
+        <h3 className="font-bold text-slate-800 text-lg leading-snug tracking-tight break-words group-hover:text-indigo-600 transition-colors">
+          <button className="text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500 rounded" onClick={e => { e.stopPropagation(); onView(post); }}>{post.title}</button>
         </h3>
       </div>
 
+      <p className="text-sm text-slate-500 line-clamp-2 mb-5">{extractText(post.content)}</p>
       {/* Metadados e Ações */}
       <div className="border-t border-slate-100 pt-3 shrink-0 space-y-2">
         {/* Autor e Data */}

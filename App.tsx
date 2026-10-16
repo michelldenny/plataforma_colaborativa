@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { POSTURAS, POSTURA_COLORS, CONTENT_TYPES, getPosturaStyle } from './constants';
 import { Post, PosturaType, ContentTypeItem } from './types';
+import { extractText } from './components/richText';
 import PostCard from './components/PostCard';
 import CreateModal from './components/CreateModal';
 import ViewModal from './components/ViewModal';
@@ -32,6 +33,7 @@ import {
 export default function App() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [selectedPostura, setSelectedPostura] = useState<PosturaType>('Todas');
   const [selectedType, setSelectedType] = useState<string>('Todas');
   const [searchTerm, setSearchTerm] = useState('');
@@ -76,6 +78,7 @@ export default function App() {
         setPosts(penhaPosts);
       } catch (error) {
         console.error("Error fetching documents: ", error);
+        setLoadError("Não foi possível carregar os registros. Verifique sua conexão e atualize a página.");
       } finally {
         setLoading(false);
       }
@@ -213,14 +216,13 @@ export default function App() {
     return { total, uniqueAuthors, activeThemes, riskCount };
   }, [posts]);
 
+  const normalizeSearch = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   const filteredPosts = useMemo(() => {
     return posts.filter(post => {
       const matchPostura = selectedPostura === 'Todas' || post.postura === selectedPostura;
       const matchType = selectedType === 'Todas' || post.type === selectedType;
-      const matchSearch = searchTerm === '' || 
-        post.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        post.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (post.address && post.address.toLowerCase().includes(searchTerm.toLowerCase()));
+      const plainContent = extractText(post.content);
+      const matchSearch = normalizeSearch([post.title, plainContent, post.address || '', post.author || ''].join(' ')).includes(normalizeSearch(searchTerm.trim()));
       return matchPostura && matchType && matchSearch;
     });
   }, [posts, selectedPostura, selectedType, searchTerm]);
@@ -242,12 +244,12 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fcfdfe] flex flex-col font-sans text-slate-900 pb-20">
+    <div className="min-h-screen bg-[#fcfdfe] flex flex-col app-shell text-slate-900 pb-20">
       
       {/* Header Premium */}
       <header className="bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 py-5">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex flex-col xl:flex-row justify-between items-center gap-6">
             
             <div className="flex items-center gap-4">
               <div className="bg-indigo-600 w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200">
@@ -262,11 +264,12 @@ export default function App() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 w-full md:w-auto">
-              <div className="relative flex-1 md:w-[350px]">
+            <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+              <div className="relative flex-1 min-w-[220px] xl:w-[300px]">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
-                  type="text"
+                  aria-label="Pesquisar registros"
+                  type="search"
                   placeholder="Pesquisar por título, conteúdo ou local..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -294,6 +297,8 @@ export default function App() {
       </header>
 
       <main className="max-w-7xl mx-auto w-full px-6 pt-10">
+        <div className="portal-intro"><span>CONHECIMENTO QUE CONECTA</span><h2>Experiências de campo.<br />Conhecimento para todos.</h2><p>Encontre orientações, compartilhe aprendizados e fortaleça a atuação da equipe.</p></div>
+        {loadError && <div role="alert" className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900 text-sm">{loadError}</div>}
         
         {/* Dashboard Minimalista */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
@@ -341,7 +346,7 @@ export default function App() {
           </div>
           
           <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-6">
-            <div className="flex justify-start md:justify-center gap-2 overflow-x-auto no-scrollbar pb-1">
+            <div className="flex justify-start flex-wrap gap-2 pb-1">
               {posturas.map(postura => {
                 const isActive = selectedPostura === postura;
                 const colors = getPosturaStyle(postura);
@@ -399,7 +404,7 @@ export default function App() {
             <p className="text-slate-400 text-sm font-bold mt-2 uppercase tracking-wide">Tente ajustar seus filtros ou busca</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 max-w-7xl mx-auto pb-32">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6 max-w-7xl mx-auto pb-32">
             {filteredPosts.map(post => (
               <PostCard key={post.id} post={post} onDelete={handleDeletePost} onEdit={handleEditClick} onView={handleViewClick} />
             ))}

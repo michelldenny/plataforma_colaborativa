@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useModal } from './useModal';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { Post, PosturaType, ContentType } from '../types';
@@ -38,14 +39,16 @@ const CreateModal: React.FC<CreateModalProps> = ({
   const [errorMessage, setErrorMessage] = useState<string>('');
   const modalRef = useRef<HTMLDivElement>(null);
 
-  const quillModules = {
+  useModal(isOpen, modalRef, () => { if (!isSubmitting) onClose(); });
+
+  const quillModules = useMemo(() => ({
     toolbar: [
       ['bold', 'italic', 'underline'],
       [{ 'list': 'ordered'}, { 'list': 'bullet' }],
       [{ 'color': [] }, { 'background': [] }],
       ['clean']
     ],
-  };
+  }), []);
 
   useEffect(() => {
     if (isOpen) {
@@ -70,8 +73,12 @@ const CreateModal: React.FC<CreateModalProps> = ({
     setIsSubmitting(false);
   }, [isOpen, initialData, defaultPostura]);
 
+  useEffect(() => {
+    if (errorMessage) document.getElementById('post-form')?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [errorMessage]);
+
   const handleBackdropClick = (e: React.MouseEvent) => {
-    if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+    if (!isSubmitting && modalRef.current && !modalRef.current.contains(e.target as Node)) {
       onClose();
     }
   };
@@ -85,7 +92,9 @@ const CreateModal: React.FC<CreateModalProps> = ({
       return;
     }
 
-    if (!content.trim() || content === '<p><br></p>') {
+    if (!title.trim()) { setErrorMessage('Informe o assunto principal.'); return; }
+    const plainText = new DOMParser().parseFromString(content, 'text/html').body.textContent || '';
+    if (!plainText.trim()) {
       setErrorMessage('O campo Descrição Detalhada é obrigatório.');
       return;
     }
@@ -99,10 +108,10 @@ const CreateModal: React.FC<CreateModalProps> = ({
         postura, 
         subprefeitura: 'penha', 
         type, 
-        title, 
+        title: title.trim(), 
         content, 
-        address: address || undefined, 
-        author: author, 
+        address: address.trim(), 
+        author: author.trim(), 
         createdAt: initialData?.createdAt || Date.now()
       };
 
@@ -110,7 +119,7 @@ const CreateModal: React.FC<CreateModalProps> = ({
       onClose();
     } catch (error) {
       console.error("Failed to submit form:", error);
-      setErrorMessage('Erro ao salvar.');
+      setErrorMessage('Não foi possível salvar. Verifique sua conexão e tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -120,16 +129,17 @@ const CreateModal: React.FC<CreateModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-all duration-300" onClick={handleBackdropClick}>
-      <div ref={modalRef} className="bg-white rounded-[2.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.3)] w-full max-w-3xl max-h-[94vh] overflow-hidden animate-in fade-in zoom-in-95 duration-300 border border-slate-100 flex flex-col">
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="create-title" tabIndex={-1} className="bg-white rounded-[2.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.3)] w-full max-w-3xl max-h-[94vh] overflow-hidden animate-in fade-in zoom-in-95 duration-300 border border-slate-100 flex flex-col">
         <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-white z-10 shrink-0">
           <div>
-            <h2 className="text-xl font-bold text-slate-900 tracking-tight">{initialData ? 'Editar Registro' : 'Novo Registro'}</h2>
+            <h2 id="create-title" className="text-xl font-bold text-slate-900 tracking-tight">{initialData ? 'Editar Registro' : 'Novo Registro'}</h2>
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Unidade: Subprefeitura Penha</p>
           </div>
-          <button onClick={onClose} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all text-slate-400"><X className="w-5 h-5" /></button>
+          <button aria-label="Fechar formulário" disabled={isSubmitting} onClick={onClose} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all text-slate-400"><X className="w-5 h-5" /></button>
         </div>
         
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+        <form id="post-form" onSubmit={handleSubmit} className="min-h-0 flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+          {errorMessage && <div role="alert" className="rounded-xl bg-rose-50 border border-rose-200 p-4 text-sm text-rose-700">{errorMessage}</div>}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -146,7 +156,7 @@ const CreateModal: React.FC<CreateModalProps> = ({
                 )}
               </div>
               <div className="relative">
-                <select 
+                <select aria-label="Tema da fiscalização"
                   value={postura} 
                   onChange={(e) => setPostura(e.target.value as PosturaType)} 
                   className="w-full p-3 bg-slate-50 border border-slate-100 focus:border-indigo-500 rounded-xl text-xs font-bold text-slate-700 outline-none transition-all appearance-none cursor-pointer"
@@ -161,6 +171,7 @@ const CreateModal: React.FC<CreateModalProps> = ({
               <div className="relative">
                 <User className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
                 <input 
+                  aria-label="Autor"
                   type="text" 
                   required 
                   value={author} 
@@ -203,6 +214,7 @@ const CreateModal: React.FC<CreateModalProps> = ({
           <div>
             <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Assunto Principal</label>
             <input 
+              aria-label="Assunto principal"
               type="text" 
               required 
               value={title} 
@@ -234,6 +246,7 @@ const CreateModal: React.FC<CreateModalProps> = ({
                 type="text" 
                 value={address} 
                 onChange={(e) => setAddress(e.target.value)} 
+                aria-label="Localização"
                 placeholder="Logradouro, número..." 
                 className="w-full p-3.5 pl-12 bg-slate-50 border border-slate-100 focus:border-indigo-500 rounded-xl text-xs font-bold text-slate-700 outline-none transition-all placeholder:text-slate-300" 
               />
@@ -251,7 +264,7 @@ const CreateModal: React.FC<CreateModalProps> = ({
             CANCELAR
           </button>
           <button 
-            onClick={(e) => handleSubmit(e as any)}
+            type="submit" form="post-form"
             disabled={isSubmitting} 
             className="flex-1 py-3 bg-indigo-600 text-white font-bold text-[10px] uppercase tracking-[0.2em] rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 disabled:opacity-70 transition-all active:scale-95"
           >

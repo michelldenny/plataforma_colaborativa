@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useMemo, useRef } from 'react';
 import { Post } from '../types';
-import { POSTURA_COLORS, CONTENT_TYPES, getPosturaStyle, getContentTypeConfig } from '../constants';
-import { X, MapPin, User, Calendar, Tag, Clock, Maximize2, Share2, Pencil } from 'lucide-react';
+import { getPosturaStyle } from '../constants';
+import { X, MapPin, User, Calendar, Clock, Pencil, BookOpen } from 'lucide-react';
+import { useModal } from './useModal';
+import { sanitizeContent } from './richText';
 
 interface ViewModalProps {
   post: Post | null;
@@ -10,180 +12,42 @@ interface ViewModalProps {
   onEdit?: (post: Post) => void;
 }
 
-const ViewModal: React.FC<ViewModalProps> = ({ post, isOpen, onClose, onEdit }) => {
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) onClose();
-  };
-
-  // Substitui hífens normais por hífens não-quebráveis (&#8209;) quando entre letras
-  // para evitar que palavras com hífen (ex: "Trata-se") quebrem de linha de forma feia.
-  const formatPostContent = (htmlContent: string) => {
-    if (!htmlContent) return '';
-    return htmlContent.replace(/(\p{L})(-)(\p{L})/gu, '$1&#8209;$3');
-  };
-
+export default function ViewModal({ post, isOpen, onClose, onEdit }: ViewModalProps) {
+  const panel = useRef<HTMLDivElement>(null);
+  useModal(isOpen, panel, onClose);
+  const content = useMemo(() => sanitizeContent(post?.content || ''), [post?.content]);
   if (!isOpen || !post) return null;
-
-  const typeConfig = getContentTypeConfig(post.type);
-  const posturaStyle = getPosturaStyle(post.postura);
-
+  const style = getPosturaStyle(post.postura);
+  const text = new DOMParser().parseFromString(content, 'text/html').body.textContent || '';
+  const minutes = Math.max(1, Math.ceil(text.split(/\s+/).length / 200));
   return (
-    <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center p-2 md:p-6 bg-slate-900/80 backdrop-blur-xl transition-all duration-500"
-      onClick={handleBackdropClick}
-    >
-      <div className="bg-white rounded-[2.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.4)] w-full max-w-[96vw] h-[94vh] overflow-hidden animate-in fade-in slide-in-from-bottom-8 duration-500 flex flex-col relative">
-        
-        {/* Barra de Ações Superior */}
-        <div className="flex items-center justify-between px-8 py-4 border-b border-slate-100 bg-slate-50/50">
-          <div className="flex items-center gap-4">
-            <div className="flex gap-1.5 mr-4">
-              <div className="w-3 h-3 rounded-full bg-rose-400"></div>
-              <div className="w-3 h-3 rounded-full bg-amber-400"></div>
-              <div className="w-3 h-3 rounded-full bg-emerald-400"></div>
-            </div>
-            <div className="flex items-center gap-2 px-3 py-1 bg-white rounded-lg border border-slate-200 text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-              <Maximize2 className="w-3 h-3" /> Modo Leitura
-            </div>
-          </div>
-          
+    <div className="modal-backdrop" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div ref={panel} role="dialog" aria-modal="true" aria-labelledby="reading-title" tabIndex={-1} className="reading-panel">
+        <div className="reading-toolbar">
+          <span className="reading-mode"><BookOpen size={18} /> Espaço de leitura</span>
           <div className="flex items-center gap-2">
-            <button 
-              onClick={() => onEdit && onEdit(post)}
-              className="p-2.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-xl transition-all border border-indigo-100 flex items-center gap-2 px-4"
-              title="Editar Registro"
-            >
-              <Pencil className="w-4 h-4" />
-              <span className="text-xs font-bold uppercase tracking-wider">Editar</span>
-            </button>
-            <button className="p-2.5 hover:bg-white hover:shadow-sm rounded-xl transition-all text-slate-400 hover:text-slate-600 border border-transparent hover:border-slate-200">
-              <Share2 className="w-5 h-5" />
-            </button>
-            <div className="w-px h-6 bg-slate-200 mx-2"></div>
-            <button 
-              onClick={onClose} 
-              className="p-2.5 bg-slate-900 text-white hover:bg-slate-800 rounded-xl transition-all shadow-lg shadow-slate-200 active:scale-95"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            {onEdit && <button onClick={() => onEdit(post)} className="reading-edit"><Pencil size={16} /> Editar</button>}
+            <button onClick={onClose} className="modal-close" aria-label="Fechar leitura"><X size={21} /></button>
           </div>
         </div>
-
-        <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
-          {/* Header de Título */}
-          <div className="pt-16 pb-10 px-8 md:px-24 lg:px-48 border-b border-slate-50">
-             <div className="flex items-center gap-3 mb-8">
-                <span className={`px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[0.2em] ${posturaStyle.bg} ${posturaStyle.text} border border-current`}>
-                  {post.postura}
-                </span>
-                <span className={`px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[0.2em] bg-slate-100 text-slate-500 border border-slate-200`}>
-                  {typeConfig.label}
-                </span>
-              </div>
-              
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-semibold text-slate-900 leading-[1.1] tracking-tight mb-10 overflow-wrap-break-word">
-                {post.title}
-              </h2>
-
-              {/* Barra de Info Compacta */}
-              <div className="flex flex-wrap items-center gap-x-10 gap-y-4 py-6 border-y border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
-                    <User className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Autor</p>
-                    <p className="text-sm font-bold text-slate-800">{post.author || 'Anônimo'}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
-                    <Calendar className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Data do Registro</p>
-                    <p className="text-sm font-bold text-slate-800">
-                      {new Date(post.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}
-                    </p>
-                  </div>
-                </div>
-
-                {post.address && (
-                  <div className="flex items-center gap-3 lg:ml-auto">
-                    <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500">
-                      <MapPin className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Localização</p>
-                      <p className="text-sm font-bold text-slate-800 truncate max-w-[200px] md:max-w-[400px]">
-                        {post.address}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
+        <div className="reading-scroll custom-scrollbar">
+          <div className="reading-document">
+            <div className="reading-badges">
+              <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${style.bg} ${style.text}`}>{post.postura}</span>
+              <span className="text-xs font-semibold text-slate-500">{post.type}</span>
+              <span className="reading-time"><Clock size={14} /> {minutes} min de leitura</span>
+            </div>
+            <h2 id="reading-title">{post.title}</h2>
+            <div className="reading-metadata">
+              <span><User size={16} /> {post.author || 'Anônimo'}</span>
+              <span><Calendar size={16} /> {new Date(post.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
+              {post.address && <span className="reading-address"><MapPin size={16} /> {post.address}</span>}
+            </div>
+            <article className="reading-content" lang="pt-BR" dangerouslySetInnerHTML={{ __html: content }} />
           </div>
-
-          {/* ÁREA DO TEXTO */}
-          <div className="flex-1 px-8 md:px-24 lg:px-48 py-16">
-            <article className="prose prose-slate prose-xl max-w-none">
-              <div 
-                className="text-slate-800 text-xl md:text-2xl leading-[1.7] font-normal rich-text-content-v3"
-                lang="pt-BR"
-                dangerouslySetInnerHTML={{ __html: formatPostContent(post.content) }}
-              />
-            </article>
-          </div>
+          <footer className="reading-footer">Fiscais SP · Conhecimento compartilhado, atuação fortalecida.</footer>
         </div>
-
-        {/* Rodapé Slim */}
-        <div className="px-8 py-6 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-slate-400 font-bold text-[10px] uppercase tracking-[0.3em]">
-           <span>Fiscais SP • Inteligência de Campo</span>
-           <div className="flex items-center gap-4">
-             <span className="flex items-center gap-2"><Clock className="w-3 h-3" /> Atualizado: {new Date().toLocaleDateString()}</span>
-           </div>
-         </div>
       </div>
-
-      <style dangerouslySetInnerHTML={{ __html: `
-        .rich-text-content-v3,
-        .rich-text-content-v3 p,
-        .rich-text-content-v3 span,
-        .rich-text-content-v3 li,
-        .rich-text-content-v3 strong,
-        .rich-text-content-v3 b {
-          overflow-wrap: break-word !important;
-          word-break: keep-all !important;
-          hyphens: none !important;
-          -webkit-hyphens: none !important;
-          -moz-hyphens: none !important;
-          -ms-hyphens: none !important;
-          white-space: normal !important;
-        }
-        /* Garantir que as listas e parágrafos do Quill sejam exibidos corretamente */
-        .rich-text-content-v3 p { margin-bottom: 1.5rem; }
-        .rich-text-content-v3 ul { list-style-type: disc; margin-left: 1.5rem; margin-bottom: 1.5rem; }
-        .rich-text-content-v3 ol { list-style-type: decimal; margin-left: 1.5rem; margin-bottom: 1.5rem; }
-        .rich-text-content-v3 li { margin-bottom: 0.5rem; }
-        .rich-text-content-v3 b, .rich-text-content-v3 strong { font-weight: bold; }
-        
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #e2e8f0;
-          border-radius: 20px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #cbd5e1;
-        }
-      `}} />
     </div>
   );
-};
-
-export default ViewModal;
+}

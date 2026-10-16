@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { useModal } from './useModal';
 import { X, Plus, Trash2, Tag, Layers, Check, AlertCircle, Sparkles } from 'lucide-react';
 import { ContentTypeItem } from '../types';
 import { POSTURAS as DEFAULT_POSTURAS, CONTENT_TYPES as DEFAULT_CONTENT_TYPES, COLOR_PRESETS, getPosturaStyle } from '../constants';
@@ -38,6 +39,8 @@ export default function ManageTaxonomiesModal({
   const [isAddingType, setIsAddingType] = useState(false);
   const [typeError, setTypeError] = useState('');
 
+  const panelRef = useRef<HTMLDivElement>(null);
+  useModal(isOpen, panelRef, onClose);
   if (!isOpen) return null;
 
   const defaultPosturaNames = DEFAULT_POSTURAS.map(p => p.toLowerCase());
@@ -106,7 +109,7 @@ export default function ManageTaxonomiesModal({
       className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-all duration-300"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-[2.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.3)] w-full max-w-2xl max-h-[92vh] overflow-hidden flex flex-col border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-label="Gerenciar categorias" tabIndex={-1} className="bg-white rounded-[2.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.3)] w-full max-w-2xl max-h-[92vh] overflow-hidden flex flex-col border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header do Modal */}
         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-white shrink-0">
