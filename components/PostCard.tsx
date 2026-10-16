@@ -46,7 +46,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, onDelete, onEdit, onView }) =
 
       {/* Meio: Título principal */}
       <div className="my-auto py-2 flex-1 flex flex-col justify-center">
-        <h3 className="font-bold text-slate-800 text-lg leading-snug tracking-tight break-words group-hover:text-indigo-600 transition-colors">
+        <h3 className="post-card-title font-bold text-slate-800 text-lg leading-snug tracking-tight break-words group-hover:text-indigo-600 transition-colors">
           <button className="text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500 rounded" onClick={e => { e.stopPropagation(); onView(post); }}>{post.title}</button>
         </h3>
       </div>

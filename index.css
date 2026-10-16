@@ -68,3 +68,4 @@ button:disabled { cursor: wait; }
   .app-shell main > .grid { gap: 12px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+.post-card-title { text-transform: uppercase; }
