@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import { Post, PosturaType, ContentType } from '../types';
+import { ContentTypeItem } from '../types';
 import { POSTURAS, CONTENT_TYPES } from '../constants';
-import { X, Save, Loader2, MapPin, User, ChevronDown } from 'lucide-react';
+import { X, Save, Loader2, MapPin, User, ChevronDown, PlusCircle } from 'lucide-react';
 
 interface CreateModalProps {
   isOpen: boolean;
@@ -12,6 +13,9 @@ interface CreateModalProps {
   defaultSubprefeitura: string;
   defaultPostura: string;
   initialData?: Post | null;
+  availablePosturas?: string[];
+  availableContentTypes?: ContentTypeItem[];
+  onOpenManageCategories?: () => void;
 }
 
 const CreateModal: React.FC<CreateModalProps> = ({ 
@@ -19,7 +23,10 @@ const CreateModal: React.FC<CreateModalProps> = ({
   onClose, 
   onSubmit, 
   defaultPostura,
-  initialData
+  initialData,
+  availablePosturas = POSTURAS,
+  availableContentTypes = CONTENT_TYPES,
+  onOpenManageCategories
 }) => {
   const [postura, setPostura] = useState<PosturaType>('Obras');
   const [type, setType] = useState<ContentType>('Resumo');
@@ -125,14 +132,26 @@ const CreateModal: React.FC<CreateModalProps> = ({
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Tema da Fiscalização</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Tema da Fiscalização</label>
+                {onOpenManageCategories && (
+                  <button 
+                    type="button" 
+                    onClick={onOpenManageCategories}
+                    className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition-colors"
+                  >
+                    <PlusCircle className="w-3 h-3" />
+                    Nova postura
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <select 
                   value={postura} 
                   onChange={(e) => setPostura(e.target.value as PosturaType)} 
                   className="w-full p-3 bg-slate-50 border border-slate-100 focus:border-indigo-500 rounded-xl text-xs font-bold text-slate-700 outline-none transition-all appearance-none cursor-pointer"
                 >
-                  {POSTURAS.filter(p => p !== 'Todas').map(p => <option key={p} value={p}>{p}</option>)}
+                  {availablePosturas.filter(p => p !== 'Todas').map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
               </div>
@@ -154,9 +173,21 @@ const CreateModal: React.FC<CreateModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Classificação do Conteúdo</label>
+            <div className="flex items-center justify-between mb-3">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Classificação do Conteúdo</label>
+              {onOpenManageCategories && (
+                <button 
+                  type="button" 
+                  onClick={onOpenManageCategories}
+                  className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition-colors"
+                >
+                  <PlusCircle className="w-3 h-3" />
+                  Novo tipo
+                </button>
+              )}
+            </div>
             <div className="flex flex-wrap gap-2">
-              {CONTENT_TYPES.filter(t => t.value !== 'Todas').map(ct => (
+              {availableContentTypes.filter(t => t.value !== 'Todas').map(ct => (
                 <button 
                   key={ct.value} 
                   type="button" 

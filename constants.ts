@@ -107,4 +107,44 @@ export const CONTENT_TYPES = [
   { value: 'Risco', label: 'Risco / Alerta', color: 'bg-red-100 text-red-800', iconBg: 'bg-red-100', iconText: 'text-red-700' },
   { value: 'Documento', label: 'Documento', color: 'bg-purple-100 text-purple-800', iconBg: 'bg-purple-100', iconText: 'text-purple-700' },
   { value: 'Links', label: 'Links', color: 'bg-emerald-100 text-emerald-800', iconBg: 'bg-emerald-100', iconText: 'text-emerald-700' },
+  { value: 'Pareceres', label: 'Pareceres', color: 'bg-teal-100 text-teal-800', iconBg: 'bg-teal-100', iconText: 'text-teal-700' },
 ];
+
+export const COLOR_PRESETS = [
+  { id: 'teal', name: 'Verde Petróleo', bg: 'bg-teal-100', border: 'border-teal-500', text: 'text-teal-700', iconColor: 'text-teal-500', active: 'bg-teal-100 text-teal-700 ring-1 ring-teal-200', inactive: 'bg-teal-50 text-teal-600 hover:bg-teal-100' },
+  { id: 'indigo', name: 'Índigo Real', bg: 'bg-indigo-100', border: 'border-indigo-500', text: 'text-indigo-700', iconColor: 'text-indigo-500', active: 'bg-indigo-100 text-indigo-700 ring-1 ring-indigo-200', inactive: 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100' },
+  { id: 'violet', name: 'Violeta / Roxo', bg: 'bg-violet-100', border: 'border-violet-500', text: 'text-violet-700', iconColor: 'text-violet-500', active: 'bg-violet-100 text-violet-700 ring-1 ring-violet-200', inactive: 'bg-violet-50 text-violet-600 hover:bg-violet-100' },
+  { id: 'sky', name: 'Azul Celeste', bg: 'bg-sky-100', border: 'border-sky-500', text: 'text-sky-700', iconColor: 'text-sky-500', active: 'bg-sky-100 text-sky-700 ring-1 ring-sky-200', inactive: 'bg-sky-50 text-sky-600 hover:bg-sky-100' },
+  { id: 'fuchsia', name: 'Fúcsia', bg: 'bg-fuchsia-100', border: 'border-fuchsia-500', text: 'text-fuchsia-700', iconColor: 'text-fuchsia-500', active: 'bg-fuchsia-100 text-fuchsia-700 ring-1 ring-fuchsia-200', inactive: 'bg-fuchsia-50 text-fuchsia-600 hover:bg-fuchsia-100' },
+  { id: 'emerald', name: 'Esmeralda', bg: 'bg-emerald-100', border: 'border-emerald-500', text: 'text-emerald-700', iconColor: 'text-emerald-500', active: 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200', inactive: 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100' },
+  { id: 'amber', name: 'Âmbar / Dourado', bg: 'bg-amber-100', border: 'border-amber-500', text: 'text-amber-700', iconColor: 'text-amber-500', active: 'bg-amber-100 text-amber-700 ring-1 ring-amber-200', inactive: 'bg-amber-50 text-amber-600 hover:bg-amber-100' },
+  { id: 'rose', name: 'Rosa Coral', bg: 'bg-rose-100', border: 'border-rose-500', text: 'text-rose-700', iconColor: 'text-rose-500', active: 'bg-rose-100 text-rose-700 ring-1 ring-rose-200', inactive: 'bg-rose-50 text-rose-600 hover:bg-rose-100' }
+];
+
+export function getPosturaStyle(name: string) {
+  if (POSTURA_COLORS[name]) {
+    return POSTURA_COLORS[name];
+  }
+  // Se for uma postura dinâmica, gera cor baseada no nome
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % COLOR_PRESETS.length;
+  return COLOR_PRESETS[index];
+}
+
+export function getContentTypeConfig(typeValue: string, customTypes: Array<{ value: string; label: string; color: string; iconBg: string; iconText: string }> = []) {
+  const found = customTypes.find(c => c.value.toLowerCase() === typeValue.toLowerCase()) || 
+                CONTENT_TYPES.find(c => c.value.toLowerCase() === typeValue.toLowerCase());
+  
+  if (found) return found;
+
+  return {
+    value: typeValue,
+    label: typeValue,
+    color: 'bg-indigo-100 text-indigo-800',
+    iconBg: 'bg-indigo-100',
+    iconText: 'text-indigo-700'
+  };
+}

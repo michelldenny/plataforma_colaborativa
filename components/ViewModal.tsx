@@ -1,6 +1,6 @@
 import React from 'react';
 import { Post } from '../types';
-import { POSTURA_COLORS, CONTENT_TYPES } from '../constants';
+import { POSTURA_COLORS, CONTENT_TYPES, getPosturaStyle, getContentTypeConfig } from '../constants';
 import { X, MapPin, User, Calendar, Tag, Clock, Maximize2, Share2, Pencil } from 'lucide-react';
 
 interface ViewModalProps {
@@ -24,8 +24,8 @@ const ViewModal: React.FC<ViewModalProps> = ({ post, isOpen, onClose, onEdit }) 
 
   if (!isOpen || !post) return null;
 
-  const typeConfig = CONTENT_TYPES.find(c => c.value === post.type) || CONTENT_TYPES[1];
-  const posturaStyle = POSTURA_COLORS[post.postura] || POSTURA_COLORS['Todas'];
+  const typeConfig = getContentTypeConfig(post.type);
+  const posturaStyle = getPosturaStyle(post.postura);
 
   return (
     <div 

@@ -4,11 +4,14 @@ import {
   collection, 
   addDoc, 
   getDocs, 
+  getDoc,
+  setDoc,
   deleteDoc, 
   doc, 
   updateDoc, 
   query, 
-  orderBy 
+  orderBy,
+  onSnapshot
 } from "firebase/firestore";
 import { 
   getStorage, 
@@ -36,11 +39,14 @@ export {
   collection, 
   addDoc, 
   getDocs, 
+  getDoc,
+  setDoc,
   deleteDoc, 
   doc, 
   updateDoc, 
   query, 
   orderBy,
+  onSnapshot,
   ref,
   uploadBytes,
   getDownloadURL

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { POSTURAS, POSTURA_COLORS, CONTENT_TYPES } from './constants';
-import { Post, PosturaType } from './types';
+import { POSTURAS, POSTURA_COLORS, CONTENT_TYPES, getPosturaStyle } from './constants';
+import { Post, PosturaType, ContentTypeItem } from './types';
 import PostCard from './components/PostCard';
 import CreateModal from './components/CreateModal';
 import ViewModal from './components/ViewModal';
-import { db, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, orderBy } from './firebase';
+import ManageTaxonomiesModal from './components/ManageTaxonomiesModal';
+import { db, collection, addDoc, getDocs, getDoc, setDoc, deleteDoc, doc, updateDoc, query, orderBy } from './firebase';
 import { 
   Plus, 
   Search, 
@@ -22,7 +23,10 @@ import {
   UserCheck,
   ShieldAlert,
   MoreHorizontal,
-  ChevronDown
+  ChevronDown,
+  SlidersHorizontal,
+  Scale,
+  Bookmark
 } from 'lucide-react';
 
 export default function App() {
@@ -32,8 +36,26 @@ export default function App() {
   const [selectedType, setSelectedType] = useState<string>('Todas');
   const [searchTerm, setSearchTerm] = useState('');
   
+  // Taxonomias dinâmicas com cache e Firestore
+  const [posturas, setPosturas] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('fiscais_taxonomies_posturas');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return POSTURAS;
+  });
+
+  const [contentTypes, setContentTypes] = useState<ContentTypeItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('fiscais_taxonomies_types');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return CONTENT_TYPES;
+  });
+
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isManageTaxonomiesOpen, setIsManageTaxonomiesOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [viewingPost, setViewingPost] = useState<Post | null>(null);
 
@@ -60,6 +82,84 @@ export default function App() {
     };
     fetchPosts();
   }, []);
+
+  useEffect(() => {
+    const fetchTaxonomies = async () => {
+      try {
+        const docRef = doc(db, "settings", "taxonomies");
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.posturas && Array.isArray(data.posturas)) {
+            const mergedPosturas = Array.from(new Set([...POSTURAS, ...data.posturas]));
+            setPosturas(mergedPosturas);
+            localStorage.setItem('fiscais_taxonomies_posturas', JSON.stringify(mergedPosturas));
+          }
+          if (data.contentTypes && Array.isArray(data.contentTypes)) {
+            const existingValues = new Set(data.contentTypes.map((t: any) => t.value.toLowerCase()));
+            const missingDefaults = CONTENT_TYPES.filter(t => !existingValues.has(t.value.toLowerCase()));
+            const mergedTypes = [...missingDefaults, ...data.contentTypes];
+            setContentTypes(mergedTypes);
+            localStorage.setItem('fiscais_taxonomies_types', JSON.stringify(mergedTypes));
+          }
+        } else {
+          await setDoc(docRef, {
+            posturas: POSTURAS,
+            contentTypes: CONTENT_TYPES
+          }, { merge: true });
+        }
+      } catch (err) {
+        console.warn("Sincronização de categorias Firestore em modo offline/local:", err);
+      }
+    };
+    fetchTaxonomies();
+  }, []);
+
+  const handleAddPostura = async (newPostura: string) => {
+    const updated = [...posturas, newPostura];
+    setPosturas(updated);
+    localStorage.setItem('fiscais_taxonomies_posturas', JSON.stringify(updated));
+    try {
+      await setDoc(doc(db, "settings", "taxonomies"), { posturas: updated }, { merge: true });
+    } catch (err) {
+      console.error("Erro ao salvar postura no Firestore:", err);
+    }
+  };
+
+  const handleDeletePostura = async (name: string) => {
+    const updated = posturas.filter(p => p !== name);
+    setPosturas(updated);
+    if (selectedPostura === name) setSelectedPostura('Todas');
+    localStorage.setItem('fiscais_taxonomies_posturas', JSON.stringify(updated));
+    try {
+      await setDoc(doc(db, "settings", "taxonomies"), { posturas: updated }, { merge: true });
+    } catch (err) {
+      console.error("Erro ao remover postura no Firestore:", err);
+    }
+  };
+
+  const handleAddContentType = async (newType: ContentTypeItem) => {
+    const updated = [...contentTypes, newType];
+    setContentTypes(updated);
+    localStorage.setItem('fiscais_taxonomies_types', JSON.stringify(updated));
+    try {
+      await setDoc(doc(db, "settings", "taxonomies"), { contentTypes: updated }, { merge: true });
+    } catch (err) {
+      console.error("Erro ao salvar tipo no Firestore:", err);
+    }
+  };
+
+  const handleDeleteContentType = async (value: string) => {
+    const updated = contentTypes.filter(t => t.value !== value);
+    setContentTypes(updated);
+    if (selectedType === value) setSelectedType('Todas');
+    localStorage.setItem('fiscais_taxonomies_types', JSON.stringify(updated));
+    try {
+      await setDoc(doc(db, "settings", "taxonomies"), { contentTypes: updated }, { merge: true });
+    } catch (err) {
+      console.error("Erro ao remover tipo no Firestore:", err);
+    }
+  };
 
   const handleSavePost = async (postData: any) => {
     try {
@@ -136,7 +236,8 @@ export default function App() {
       case 'Área Pública': return <Trees className="w-4 h-4" />;
       case 'POP': return <UserCheck className="w-4 h-4" />;
       case 'Defesa Civil': return <ShieldAlert className="w-4 h-4" />;
-      default: return <MoreHorizontal className="w-4 h-4" />;
+      case 'Outras': return <MoreHorizontal className="w-4 h-4" />;
+      default: return <Bookmark className="w-4 h-4" />;
     }
   };
 
@@ -161,8 +262,8 @@ export default function App() {
               </div>
             </div>
 
-            <div className="flex items-center gap-4 w-full md:w-auto">
-              <div className="relative flex-1 md:w-[400px]">
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <div className="relative flex-1 md:w-[350px]">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
@@ -172,11 +273,19 @@ export default function App() {
                   className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 rounded-2xl text-sm transition-all outline-none font-semibold text-slate-700"
                 />
               </div>
+              <button
+                onClick={() => setIsManageTaxonomiesOpen(true)}
+                className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-4 py-3 rounded-2xl flex items-center gap-2 shadow-sm transition-all active:scale-95 font-bold text-xs uppercase tracking-wider shrink-0"
+                title="Criar e gerenciar novas Posturas e Tipos de Classificação"
+              >
+                <SlidersHorizontal className="w-4 h-4 text-indigo-600" />
+                <span className="hidden sm:inline">Categorias</span>
+              </button>
               <button 
                 onClick={() => { setEditingPost(null); setIsCreateModalOpen(true); }}
-                className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-2xl flex items-center gap-2 shadow-xl shadow-slate-200 transition-all active:scale-95 font-bold text-sm"
+                className="bg-slate-900 hover:bg-slate-800 text-white px-5 py-3 rounded-2xl flex items-center gap-2 shadow-xl shadow-slate-200 transition-all active:scale-95 font-bold text-xs uppercase tracking-wider shrink-0"
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-4 h-4" />
                 NOVO REGISTRO
               </button>
             </div>
@@ -232,10 +341,10 @@ export default function App() {
           </div>
           
           <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm space-y-6">
-            <div className="flex justify-center gap-2 overflow-x-auto no-scrollbar">
-              {POSTURAS.map(postura => {
+            <div className="flex justify-start md:justify-center gap-2 overflow-x-auto no-scrollbar pb-1">
+              {posturas.map(postura => {
                 const isActive = selectedPostura === postura;
-                const colors = POSTURA_COLORS[postura];
+                const colors = getPosturaStyle(postura);
                 return (
                   <button
                     key={postura}
@@ -253,8 +362,8 @@ export default function App() {
               })}
             </div>
 
-            <div className="flex justify-center gap-2 overflow-x-auto no-scrollbar border-t border-slate-50 pt-6">
-              {CONTENT_TYPES.map(type => {
+            <div className="flex justify-start md:justify-center gap-2 overflow-x-auto no-scrollbar border-t border-slate-50 pt-6 pb-1">
+              {contentTypes.map(type => {
                 const isActive = selectedType === type.value;
                 return (
                   <button
@@ -299,14 +408,31 @@ export default function App() {
       </main>
 
       <CreateModal 
-        isOpen={isCreateModalOpen} onClose={() => { setIsCreateModalOpen(false); setEditingPost(null); }}
-        onSubmit={handleSavePost} defaultSubprefeitura={CURRENT_SUB_ID} defaultPostura={selectedPostura} initialData={editingPost}
+        isOpen={isCreateModalOpen} 
+        onClose={() => { setIsCreateModalOpen(false); setEditingPost(null); }}
+        onSubmit={handleSavePost} 
+        defaultSubprefeitura={CURRENT_SUB_ID} 
+        defaultPostura={selectedPostura} 
+        initialData={editingPost}
+        availablePosturas={posturas}
+        availableContentTypes={contentTypes}
+        onOpenManageCategories={() => setIsManageTaxonomiesOpen(true)}
       />
       <ViewModal 
         isOpen={isViewModalOpen} 
         onClose={() => setIsViewModalOpen(false)} 
         post={viewingPost} 
         onEdit={(post) => { setIsViewModalOpen(false); handleEditClick(post); }}
+      />
+      <ManageTaxonomiesModal
+        isOpen={isManageTaxonomiesOpen}
+        onClose={() => setIsManageTaxonomiesOpen(false)}
+        posturas={posturas}
+        contentTypes={contentTypes}
+        onAddPostura={handleAddPostura}
+        onDeletePostura={handleDeletePostura}
+        onAddContentType={handleAddContentType}
+        onDeleteContentType={handleDeleteContentType}
       />
     </div>
   );
